@@ -1,0 +1,1001 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TripShare</title>
+  <meta name="description" content="A tiny shareable trip-details page. Data can be saved locally and shared via a link." />
+  <style>
+    :root {
+      --bg: #0b0c10;
+      --card: #12141b;
+      --muted: #a7adbd;
+      --text: #eef1f7;
+      --line: rgba(255,255,255,.08);
+      --btn: rgba(255,255,255,.10);
+      --btnHover: rgba(255,255,255,.16);
+      --good: #31d0aa;
+      --warn: #ffcc66;
+      --bad: #ff6b6b;
+      --shadow: 0 18px 60px rgba(0,0,0,.45);
+      --radius: 18px;
+      --radius2: 12px;
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f6f7fb;
+        --card: #ffffff;
+        --muted: #5f6676;
+        --text: #10121a;
+        --line: rgba(16,18,26,.10);
+        --btn: rgba(16,18,26,.06);
+        --btnHover: rgba(16,18,26,.10);
+        --shadow: 0 18px 60px rgba(16,18,26,.10);
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background: radial-gradient(1200px 800px at 10% 10%, rgba(49,208,170,.10), transparent 55%),
+                  radial-gradient(900px 700px at 90% 20%, rgba(255,204,102,.10), transparent 55%),
+                  var(--bg);
+      color: var(--text);
+    }
+    a { color: inherit; }
+    .wrap {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    header {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      justify-content: space-between;
+      margin: 6px 0 18px;
+    }
+    .brand {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      min-width: 220px;
+    }
+    .logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(49,208,170,.95), rgba(255,204,102,.95));
+      box-shadow: var(--shadow);
+    }
+    h1 {
+      font-size: 18px;
+      margin: 0;
+      letter-spacing: .2px;
+    }
+    .sub {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    button {
+      border: 1px solid var(--line);
+      background: var(--btn);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 14px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      transition: transform .06s ease, background .15s ease, border-color .15s ease;
+    }
+    button:hover { background: var(--btnHover); }
+    button:active { transform: translateY(1px); }
+    button.primary {
+      background: rgba(49,208,170,.18);
+      border-color: rgba(49,208,170,.35);
+    }
+    button.primary:hover { background: rgba(49,208,170,.26); }
+    button.danger {
+      background: rgba(255,107,107,.14);
+      border-color: rgba(255,107,107,.30);
+    }
+    button.danger:hover { background: rgba(255,107,107,.20); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 18px;
+    }
+    @media (max-width: 920px) {
+      .grid { grid-template-columns: 1fr; }
+      header { align-items: flex-start; }
+      .actions { justify-content: flex-start; }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .card .hd {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .card .hd h2 {
+      font-size: 14px;
+      margin: 0;
+      letter-spacing: .2px;
+    }
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+      margin: 0;
+    }
+    .card .bd { padding: 16px 18px; }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    @media (max-width: 620px) {
+      .row { grid-template-columns: 1fr; }
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin: 0 0 6px;
+    }
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--text);
+      padding: 11px 12px;
+      border-radius: var(--radius2);
+      outline: none;
+      font-size: 14px;
+    }
+    textarea { min-height: 86px; resize: vertical; }
+    .inline {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .pill {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      font-size: 12px;
+      color: var(--muted);
+      margin-left: 8px;
+    }
+
+    .list {
+      display: grid;
+      gap: 10px;
+    }
+    .item {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px 12px;
+    }
+    .item .top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .item h3 {
+      font-size: 14px;
+      margin: 0;
+    }
+    .meta {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+      line-height: 1.35;
+    }
+    .item .btns {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .mini {
+      padding: 7px 9px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .preview {
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+    }
+    .title {
+      display: grid;
+      gap: 6px;
+    }
+    .title .big {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: .2px;
+      margin: 0;
+    }
+    .title .small {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .kv {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width: 480px) { .kv { grid-template-columns: 1fr; } }
+    .kv .box {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+    }
+    .kv .k { font-size: 12px; color: var(--muted); margin: 0 0 6px; }
+    .kv .v { font-size: 14px; margin: 0; font-weight: 700; }
+
+    .section {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+    }
+    .section h4 {
+      margin: 0 0 8px;
+      font-size: 13px;
+    }
+    .section p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,.72);
+      color: white;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.16);
+      box-shadow: 0 14px 40px rgba(0,0,0,.35);
+      font-size: 13px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .18s ease, transform .18s ease;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(-2px); }
+
+    .note {
+      padding: 12px 18px 18px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .note code { padding: 1px 6px; border: 1px solid var(--line); border-radius: 10px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>TripShare</h1>
+          <p class="sub">Store trip plans locally and share a link with your buddies.</p>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="btnSave" class="primary" type="button">Save</button>
+        <button id="btnShare" type="button">Copy share link</button>
+        <button id="btnImport" type="button">Import from link</button>
+        <button id="btnClear" class="danger" type="button">Clear</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- EDITOR -->
+      <section class="card" aria-label="Trip editor">
+        <div class="hd">
+          <h2>Edit trip details <span class="pill" id="shareState">Not shared yet</span></h2>
+          <p class="hint">Add essentials + itinerary items. Then share.</p>
+        </div>
+        <div class="bd">
+          <div class="row">
+            <div>
+              <label for="tripName">Trip name</label>
+              <input id="tripName" placeholder="e.g. Lisbon weekend" />
+            </div>
+            <div>
+              <label for="destination">Destination</label>
+              <input id="destination" placeholder="e.g. Lisbon, Portugal" />
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label for="startDate">Start date</label>
+              <input id="startDate" type="date" />
+            </div>
+            <div>
+              <label for="endDate">End date</label>
+              <input id="endDate" type="date" />
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label for="meetingPoint">Meeting point</label>
+              <input id="meetingPoint" placeholder="e.g. LHR T3 arrivals" />
+            </div>
+            <div>
+              <label for="groupChat">Group chat / important link</label>
+              <input id="groupChat" placeholder="Paste a URL (WhatsApp invite, doc, etc.)" />
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label for="accommodation">Accommodation</label>
+              <input id="accommodation" placeholder="e.g. Hotel name + address" />
+            </div>
+            <div>
+              <label for="contacts">Emergency contacts</label>
+              <input id="contacts" placeholder="e.g. Alice +44…, Local emergency 112" />
+            </div>
+          </div>
+
+          <div style="margin-bottom: 14px;">
+            <label for="notes">Notes</label>
+            <textarea id="notes" placeholder="Anything everyone should know: check-in time, luggage rules, accessibility, budget, etc."></textarea>
+          </div>
+
+          <div class="card" style="box-shadow:none; border-radius: 16px;">
+            <div class="hd">
+              <h2>Notion live plan</h2>
+              <p class="hint">Paste a shared Notion link so everyone always sees the latest.</p>
+            </div>
+            <div class="bd">
+              <div class="row">
+                <div>
+                  <label for="liveDoc">Notion page link</label>
+                  <input id="liveDoc" placeholder="Paste your Notion share link" />
+                </div>
+                <div>
+                  <label for="liveLabel">Button label (optional)</label>
+                  <input id="liveLabel" placeholder="e.g. Open live itinerary" />
+                </div>
+              </div>
+              <p class="hint" style="margin:0;">Tip: set Notion sharing to “Anyone with the link”. If you update the Notion page, your buddies will see changes immediately when they open it.</p>
+            </div>
+          </div>
+
+          <div class="card" style="box-shadow:none; border-radius: 16px;">
+            <div class="hd">
+              <h2>Itinerary</h2>
+              <p class="hint">Add items (day, time, title, address, notes).</p>
+            </div>
+            <div class="bd">
+              <div class="row">
+                <div>
+                  <label for="itDate">Date</label>
+                  <input id="itDate" type="date" />
+                </div>
+                <div>
+                  <label for="itTime">Time</label>
+                  <input id="itTime" type="time" />
+                </div>
+              </div>
+              <div class="row">
+                <div>
+                  <label for="itTitle">Title</label>
+                  <input id="itTitle" placeholder="e.g. Pasteis de nata stop" />
+                </div>
+                <div>
+                  <label for="itPlace">Place / address</label>
+                  <input id="itPlace" placeholder="e.g. Bakery name, street" />
+                </div>
+              </div>
+              <div style="margin-bottom: 12px;">
+                <label for="itNotes">Item notes</label>
+                <textarea id="itNotes" placeholder="Tickets, reservation name, what to bring, etc."></textarea>
+              </div>
+              <div class="inline">
+                <button id="btnAddItem" class="primary" type="button">Add itinerary item</button>
+                <p class="hint" style="margin:0;">Tip: include a Google Maps link in “Place / address”.</p>
+              </div>
+
+              <div style="height: 14px;"></div>
+              <div class="list" id="itList"></div>
+            </div>
+          </div>
+        </div>
+        <div class="note">
+          <strong>Privacy note:</strong> saving uses <code>localStorage</code> (on this device). Sharing uses the URL itself (no server). Anyone with the link can see the details.
+        </div>
+      </section>
+
+      <!-- PREVIEW / SHARE VIEW -->
+      <section class="card" aria-label="Trip preview">
+        <div class="hd">
+          <h2>Share preview</h2>
+          <p class="hint">This is what your buddies will see.</p>
+        </div>
+        <div class="preview">
+          <div class="title">
+            <p class="big" id="pvName">Your trip</p>
+            <p class="small" id="pvSub">Fill in details on the left, then copy a share link.</p>
+          </div>
+
+          <div class="kv">
+            <div class="box">
+              <p class="k">Destination</p>
+              <p class="v" id="pvDest">—</p>
+            </div>
+            <div class="box">
+              <p class="k">Dates</p>
+              <p class="v" id="pvDates">—</p>
+            </div>
+            <div class="box">
+              <p class="k">Meeting point</p>
+              <p class="v" id="pvMeet">—</p>
+            </div>
+            <div class="box">
+              <p class="k">Accommodation</p>
+              <p class="v" id="pvStay">—</p>
+            </div>
+          </div>
+
+          <div class="section">
+            <h4>Links</h4>
+            <div id="pvLinks" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+          </div>
+
+          <div class="section">
+            <h4>Notes</h4>
+            <p id="pvNotes">—</p>
+          </div>
+
+          <div class="section">
+            <h4>Itinerary</h4>
+            <div id="pvItinerary" style="display:grid; gap:10px;"></div>
+          </div>
+
+          <div class="section">
+            <h4>Emergency contacts</h4>
+            <p id="pvContacts">—</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    // TripShare — single-file, serverless.
+    // - Stores draft in localStorage.
+    // - Share links contain the data in the URL hash (after #), so hosting is optional.
+
+    const STORAGE_KEY = 'tripshare:v1:draft';
+
+    /** @typedef {{id:string, date?:string, time?:string, title:string, place?:string, notes?:string}} ItItem */
+    /** @typedef {{tripName:string, destination:string, startDate:string, endDate:string, meetingPoint:string, groupChat:string, liveDoc:string, liveLabel:string, accommodation:string, contacts:string, notes:string, itinerary:ItItem[]}} Trip */
+
+    const $ = (id) => document.getElementById(id);
+
+    const els = {
+      tripName: $('tripName'),
+      destination: $('destination'),
+      startDate: $('startDate'),
+      endDate: $('endDate'),
+      meetingPoint: $('meetingPoint'),
+      groupChat: $('groupChat'),
+      liveDoc: $('liveDoc'),
+      liveLabel: $('liveLabel'),
+      accommodation: $('accommodation'),
+      contacts: $('contacts'),
+      notes: $('notes'),
+
+      itDate: $('itDate'),
+      itTime: $('itTime'),
+      itTitle: $('itTitle'),
+      itPlace: $('itPlace'),
+      itNotes: $('itNotes'),
+      itList: $('itList'),
+
+      pvName: $('pvName'),
+      pvSub: $('pvSub'),
+      pvDest: $('pvDest'),
+      pvDates: $('pvDates'),
+      pvMeet: $('pvMeet'),
+      pvStay: $('pvStay'),
+      pvLinks: $('pvLinks'),
+      pvNotes: $('pvNotes'),
+      pvContacts: $('pvContacts'),
+      pvItinerary: $('pvItinerary'),
+
+      shareState: $('shareState'),
+      toast: $('toast'),
+
+      btnSave: $('btnSave'),
+      btnShare: $('btnShare'),
+      btnImport: $('btnImport'),
+      btnClear: $('btnClear'),
+      btnAddItem: $('btnAddItem'),
+    };
+
+    function toast(msg) {
+      els.toast.textContent = msg;
+      els.toast.classList.add('show');
+      window.clearTimeout(toast._t);
+      toast._t = window.setTimeout(() => els.toast.classList.remove('show'), 2000);
+    }
+
+    function uid() {
+      return Math.random().toString(16).slice(2) + Date.now().toString(16);
+    }
+
+    function safeJsonParse(str) {
+      try { return JSON.parse(str); } catch { return null; }
+    }
+
+    function toBase64Url(str) {
+      const utf8 = new TextEncoder().encode(str);
+      let bin = '';
+      utf8.forEach(b => bin += String.fromCharCode(b));
+      return btoa(bin).replaceAll('+','-').replaceAll('/','_').replaceAll('=','');
+    }
+
+    function fromBase64Url(b64url) {
+      const pad = '='.repeat((4 - (b64url.length % 4)) % 4);
+      const b64 = (b64url + pad).replaceAll('-','+').replaceAll('_','/');
+      const bin = atob(b64);
+      const bytes = new Uint8Array([...bin].map(c => c.charCodeAt(0)));
+      return new TextDecoder().decode(bytes);
+    }
+
+    function defaultTrip() {
+      /** @type {Trip} */
+      return {
+        tripName: '',
+        destination: '',
+        startDate: '',
+        endDate: '',
+        meetingPoint: '',
+        groupChat: '',
+        liveDoc: '',
+        liveLabel: '',
+        accommodation: '',
+        contacts: '',
+        notes: '',
+        itinerary: [],
+      };
+    }
+
+    /** @returns {Trip} */
+    function readForm() {
+      return {
+        tripName: els.tripName.value.trim(),
+        destination: els.destination.value.trim(),
+        startDate: els.startDate.value,
+        endDate: els.endDate.value,
+        meetingPoint: els.meetingPoint.value.trim(),
+        groupChat: els.groupChat.value.trim(),
+        liveDoc: els.liveDoc.value.trim(),
+        liveLabel: els.liveLabel.value.trim(),
+        accommodation: els.accommodation.value.trim(),
+        contacts: els.contacts.value.trim(),
+        notes: els.notes.value.trim(),
+        itinerary: currentTrip.itinerary,
+      };
+    }
+
+    /** @param {Trip} trip */
+    function writeForm(trip) {
+      els.tripName.value = trip.tripName || '';
+      els.destination.value = trip.destination || '';
+      els.startDate.value = trip.startDate || '';
+      els.endDate.value = trip.endDate || '';
+      els.meetingPoint.value = trip.meetingPoint || '';
+      els.groupChat.value = trip.groupChat || '';
+      els.liveDoc.value = trip.liveDoc || '';
+      els.liveLabel.value = trip.liveLabel || '';
+      els.accommodation.value = trip.accommodation || '';
+      els.contacts.value = trip.contacts || '';
+      els.notes.value = trip.notes || '';
+    }
+
+    function fmtDateRange(start, end) {
+      if (!start && !end) return '—';
+      const f = (d) => {
+        if (!d) return '';
+        const dt = new Date(d + 'T00:00:00');
+        return dt.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+      };
+      if (start && end) return `${f(start)} → ${f(end)}`;
+      return f(start || end);
+    }
+
+    function linkify(text) {
+      const urlRe = /(https?:\/\/[^\s]+)/g;
+      return text.replace(urlRe, (m) => `<a href="${m}" target="_blank" rel="noopener noreferrer">${m}</a>`);
+    }
+
+    /** @param {Trip} trip */
+    function renderPreview(trip) {
+      const name = trip.tripName || 'Your trip';
+      const dest = trip.destination || '—';
+      const dates = fmtDateRange(trip.startDate, trip.endDate);
+
+      els.pvName.textContent = name;
+      els.pvDest.textContent = dest;
+      els.pvDates.textContent = dates;
+      els.pvMeet.textContent = trip.meetingPoint || '—';
+      els.pvStay.textContent = trip.accommodation || '—';
+
+      els.pvLinks.innerHTML = '';
+
+      const makeChip = (label, url) => {
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.textContent = label;
+        a.style.display = 'inline-flex';
+        a.style.alignItems = 'center';
+        a.style.gap = '8px';
+        a.style.padding = '8px 10px';
+        a.style.borderRadius = '999px';
+        a.style.border = '1px solid var(--line)';
+        a.style.background = 'rgba(255,255,255,.03)';
+        a.style.textDecoration = 'none';
+        a.style.fontSize = '12px';
+        a.style.color = 'var(--muted)';
+        return a;
+      };
+
+      const links = [];
+      if (trip.groupChat && trip.groupChat.startsWith('http')) links.push(makeChip('Group chat / link', trip.groupChat));
+      if (trip.liveDoc && trip.liveDoc.startsWith('http')) links.push(makeChip(trip.liveLabel || 'Open Notion plan', trip.liveDoc));
+      if (trip.accommodation) links.push(makeChip('Maps: accommodation', `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(trip.accommodation)}`));
+      if (trip.meetingPoint) links.push(makeChip('Maps: meeting point', `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(trip.meetingPoint)}`));
+
+      if (!links.length) {
+        els.pvLinks.textContent = '—';
+      } else {
+        links.forEach(x => els.pvLinks.appendChild(x));
+      }
+      els.pvNotes.textContent = trip.notes || '—';
+      els.pvContacts.textContent = trip.contacts || '—';
+
+      const subBits = [];
+      if (trip.destination) subBits.push(trip.destination);
+      if (trip.startDate || trip.endDate) subBits.push(dates);
+      els.pvSub.textContent = subBits.length ? subBits.join(' • ') : 'Fill in details on the left, then copy a share link.';
+
+      // Itinerary preview
+      const items = [...(trip.itinerary || [])].sort((a,b) => {
+        const ad = (a.date || '') + (a.time || '');
+        const bd = (b.date || '') + (b.time || '');
+        return ad.localeCompare(bd);
+      });
+
+      els.pvItinerary.innerHTML = '';
+      if (!items.length) {
+        const p = document.createElement('p');
+        p.className = 'meta';
+        p.textContent = 'No items yet.';
+        els.pvItinerary.appendChild(p);
+        return;
+      }
+
+      for (const it of items) {
+        const d = it.date ? new Date(it.date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : '';
+        const t = it.time || '';
+        const when = [d, t].filter(Boolean).join(' • ');
+
+        const box = document.createElement('div');
+        box.className = 'item';
+
+        const top = document.createElement('div');
+        top.className = 'top';
+
+        const left = document.createElement('div');
+        const h = document.createElement('h3');
+        h.textContent = it.title || '(Untitled)';
+        left.appendChild(h);
+
+        const m = document.createElement('div');
+        m.className = 'meta';
+        const place = it.place ? linkify(it.place) : '';
+        const notes = it.notes ? it.notes : '';
+        m.innerHTML = [when, place, notes].filter(Boolean).join('<br>');
+        left.appendChild(m);
+
+        top.appendChild(left);
+        box.appendChild(top);
+        els.pvItinerary.appendChild(box);
+      }
+    }
+
+    /** @param {Trip} trip */
+    function renderEditorItinerary(trip) {
+      els.itList.innerHTML = '';
+      if (!trip.itinerary.length) {
+        const p = document.createElement('p');
+        p.className = 'hint';
+        p.style.margin = '0';
+        p.textContent = 'No items yet.';
+        els.itList.appendChild(p);
+        return;
+      }
+
+      const items = [...trip.itinerary].sort((a,b) => {
+        const ad = (a.date || '') + (a.time || '');
+        const bd = (b.date || '') + (b.time || '');
+        return ad.localeCompare(bd);
+      });
+
+      for (const it of items) {
+        const wrap = document.createElement('div');
+        wrap.className = 'item';
+
+        const top = document.createElement('div');
+        top.className = 'top';
+
+        const left = document.createElement('div');
+        const h = document.createElement('h3');
+        h.textContent = it.title || '(Untitled)';
+        left.appendChild(h);
+
+        const m = document.createElement('div');
+        m.className = 'meta';
+        const d = it.date ? new Date(it.date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : '';
+        const t = it.time || '';
+        const when = [d, t].filter(Boolean).join(' • ');
+        m.textContent = [when, it.place, it.notes].filter(Boolean).join(' · ');
+        left.appendChild(m);
+
+        const btns = document.createElement('div');
+        btns.className = 'btns';
+
+        const edit = document.createElement('button');
+        edit.className = 'mini';
+        edit.type = 'button';
+        edit.textContent = 'Edit';
+        edit.addEventListener('click', () => {
+          els.itDate.value = it.date || '';
+          els.itTime.value = it.time || '';
+          els.itTitle.value = it.title || '';
+          els.itPlace.value = it.place || '';
+          els.itNotes.value = it.notes || '';
+          // Replace on add
+          deleteItem(it.id);
+          toast('Editing item — click “Add itinerary item” to re-add.');
+          markDirty();
+        });
+
+        const del = document.createElement('button');
+        del.className = 'mini danger';
+        del.type = 'button';
+        del.textContent = 'Remove';
+        del.addEventListener('click', () => {
+          deleteItem(it.id);
+          toast('Removed.');
+          markDirty();
+        });
+
+        btns.appendChild(edit);
+        btns.appendChild(del);
+
+        top.appendChild(left);
+        top.appendChild(btns);
+
+        wrap.appendChild(top);
+        els.itList.appendChild(wrap);
+      }
+    }
+
+    function deleteItem(id) {
+      currentTrip.itinerary = currentTrip.itinerary.filter(x => x.id !== id);
+      sync();
+    }
+
+    function markDirty() {
+      // If the URL contains shared data, editing means it no longer matches the link.
+      if (location.hash && location.hash.startsWith('#t=')) {
+        els.shareState.textContent = 'Edited (link out of date)';
+      } else {
+        els.shareState.textContent = 'Not shared yet';
+      }
+    }
+
+    function sync() {
+      // Read latest fields into currentTrip
+      const formTrip = readForm();
+      currentTrip = { ...currentTrip, ...formTrip };
+      renderEditorItinerary(currentTrip);
+      renderPreview(currentTrip);
+    }
+
+    function saveDraft() {
+      sync();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(currentTrip));
+      toast('Saved on this device.');
+    }
+
+    function clearAll() {
+      if (!confirm('Clear all trip details on this device?')) return;
+      localStorage.removeItem(STORAGE_KEY);
+      location.hash = '';
+      currentTrip = defaultTrip();
+      writeForm(currentTrip);
+      els.itDate.value = els.itTime.value = els.itTitle.value = els.itPlace.value = els.itNotes.value = '';
+      els.shareState.textContent = 'Not shared yet';
+      sync();
+      toast('Cleared.');
+    }
+
+    function makeShareLink() {
+      sync();
+      const payload = JSON.stringify(currentTrip);
+      const encoded = toBase64Url(payload);
+      const url = new URL(location.href);
+      url.hash = 't=' + encoded;
+      return url.toString();
+    }
+
+    async function copyShareLink() {
+      const link = makeShareLink();
+      try {
+        await navigator.clipboard.writeText(link);
+        els.shareState.textContent = 'Shared link copied';
+        toast('Share link copied.');
+      } catch {
+        // Fallback
+        prompt('Copy this link:', link);
+        els.shareState.textContent = 'Shared link ready';
+      }
+    }
+
+    function tryLoadFromHash() {
+      const hash = location.hash || '';
+      if (!hash.startsWith('#t=')) return null;
+      const b64 = hash.slice(3);
+      try {
+        const json = fromBase64Url(b64);
+        const obj = safeJsonParse(json);
+        if (!obj || typeof obj !== 'object') return null;
+        // Basic shape
+        const trip = defaultTrip();
+        Object.assign(trip, obj);
+        trip.itinerary = Array.isArray(obj.itinerary) ? obj.itinerary.map(x => ({
+          id: String(x.id || uid()),
+          date: x.date || '',
+          time: x.time || '',
+          title: String(x.title || ''),
+          place: String(x.place || ''),
+          notes: String(x.notes || ''),
+        })) : [];
+        return trip;
+      } catch {
+        return null;
+      }
+    }
+
+    function importFromLink() {
+      const fromHash = tryLoadFromHash();
+      if (!fromHash) {
+        toast('No valid trip data found in the link.');
+        return;
+      }
+      currentTrip = fromHash;
+      writeForm(currentTrip);
+      renderEditorItinerary(currentTrip);
+      renderPreview(currentTrip);
+      // Save locally too
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(currentTrip));
+      els.shareState.textContent = 'Loaded from link';
+      toast('Imported and saved locally.');
+    }
+
+    function loadDraft() {
+      const fromHash = tryLoadFromHash();
+      if (fromHash) {
+        currentTrip = fromHash;
+        writeForm(currentTrip);
+        els.shareState.textContent = 'Viewing shared link';
+        renderEditorItinerary(currentTrip);
+        renderPreview(currentTrip);
+        return;
+      }
+
+      const saved = safeJsonParse(localStorage.getItem(STORAGE_KEY) || '');
+      if (saved) {
+        currentTrip = { ...defaultTrip(), ...saved, itinerary: Array.isArray(saved.itinerary) ? saved.itinerary : [] };
+        writeForm(currentTrip);
+      } else {
+        currentTrip = defaultTrip();
+      }
+      sync();
+    }
+
+    // Events
+    ['tripName','destination','startDate','endDate','meetingPoint','groupChat','liveDoc','liveLabel','accommodation','contacts','notes']
+      .forEach(id => {
+        $(id).addEventListener('input', () => { markDirty(); sync(); });
+      });
+
+    els.btnAddItem.addEventListener('click', () => {
+      const title = els.itTitle.value.trim();
+      if (!title) {
+        toast('Add a title for the itinerary item.');
+        els.itTitle.focus();
+        return;
+      }
+      /** @type {ItItem} */
+      const item = {
+        id: uid(),
+        date: els.itDate.value || '',
+        time: els.itTime.value || '',
+        title,
+        place: els.itPlace.value.trim(),
+        notes: els.itNotes.value.trim(),
+      };
+      currentTrip.itinerary.push(item);
+      els.itTitle.value = '';
+      els.itPlace.value = '';
+      els.itNotes.value = '';
+      // keep date/time for quick adds
+      sync();
+      toast('Added.');
+      markDirty();
+    });
+
+    els.btnSave.addEventListener('click', saveDraft);
+    els.btnShare.addEventListener('click', copyShareLink);
+    els.btnImport.addEventListener('click', importFromLink);
+    els.btnClear.addEventListener('click', clearAll);
+
+    // Init
+    let currentTrip = defaultTrip();
+    loadDraft();
+  </script>
+</body>
+</html>
